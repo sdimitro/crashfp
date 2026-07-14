@@ -213,6 +213,36 @@ func TestParse_X86PrependsRIP(t *testing.T) {
 	}
 }
 
+func TestParseBytes_MatchesParse(t *testing.T) {
+	for _, src := range []string{sampleArm64Dmesg, sampleArm64IndirectCallDmesg, sampleX86Dmesg} {
+		a := Parse(src)
+		b := ParseBytes([]byte(src))
+		if a.PanicMessage != b.PanicMessage ||
+			strings.Join(a.StackTrace, "|") != strings.Join(b.StackTrace, "|") ||
+			strings.Join(a.Modules, "|") != strings.Join(b.Modules, "|") ||
+			a.Banner != b.Banner || a.Cmdline != b.Cmdline {
+			t.Errorf("ParseBytes diverges from Parse:\n%+v\nvs\n%+v", a, b)
+		}
+	}
+	if ParseBytes(nil) != nil {
+		t.Error("expected nil for nil input")
+	}
+}
+
+// The returned Crash must not alias the input: callers may reuse or
+// mutate the buffer after ParseBytes returns.
+func TestParseBytes_DoesNotAliasInput(t *testing.T) {
+	buf := []byte(sampleArm64Dmesg)
+	c := ParseBytes(buf)
+	frame0, banner := c.StackTrace[0], c.Banner
+	for i := range buf {
+		buf[i] = 'X'
+	}
+	if c.StackTrace[0] != frame0 || c.Banner != banner {
+		t.Error("Crash aliases the input buffer")
+	}
+}
+
 func TestParse_NoCrash(t *testing.T) {
 	log := "[ 0.0] [ T0] Linux version 6.5.0 (root@host) (gcc) #1\n[ 1.0] [ T1] systemd: booted\n"
 	c := Parse(log)

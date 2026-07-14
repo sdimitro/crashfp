@@ -5,6 +5,7 @@ package dmesgcrash
 import (
 	"regexp"
 	"strings"
+	"unsafe"
 
 	"github.com/sdimitro/crashfp/fingerprint"
 )
@@ -59,20 +60,30 @@ var (
 	headerFieldPattern = regexp.MustCompile(`^(CPU|Hardware name|Tainted|pstate|RIP|Code|pc|lr|sp)\b`)
 )
 
+// ParseBytes is Parse for callers that read the log into a []byte (e.g.
+// os.ReadFile). It avoids the string conversion copy — for a
+// multi-megabyte log that copy is the single largest allocation after
+// the read itself. The caller must not modify b afterwards.
+func ParseBytes(b []byte) *Crash {
+	return Parse(unsafe.String(unsafe.SliceData(b), len(b)))
+}
+
 // Parse parses kernel log text recovered from a vmcore (or captured live)
 // into a crash report. It returns nil if the log contains neither a crash
 // report nor a kernel banner/command line worth surfacing.
+//
+// Memory: the log is scanned by byte offset without splitting it into a
+// full line slice, and only the bounded crash region (~200 lines) is
+// materialized, so peak usage stays at the input plus a small constant —
+// this runs in a crash kernel where every megabyte of RAM counts.
 func Parse(raw string) *Crash {
-	rawLines := strings.Split(raw, "\n")
-	lines := make([]string, len(rawLines))
-	for i, l := range rawLines {
-		lines[i] = StripPrefix(l)
-	}
-
 	c := &Crash{}
 
 	// Banner and command line appear near the top of the boot log.
-	for _, l := range lines {
+	// Allocation-free top-down scan, stopping once both are found.
+	for off := 0; off < len(raw); {
+		line, next := nextLine(raw, off)
+		l := StripPrefix(line)
 		if c.Banner == "" && strings.HasPrefix(l, "Linux version ") {
 			c.Banner = l
 		}
@@ -82,18 +93,21 @@ func Parse(raw string) *Crash {
 		if c.Banner != "" && c.Cmdline != "" {
 			break
 		}
+		off = next
 	}
 
-	// Anchor on the last crash report in the log, then walk back to the
-	// earliest keyword in the preceding window so multi-line reports
-	// (e.g. "Unable to handle…" followed by "Internal error: Oops…")
-	// start at the top.
+	// Anchor on the last crash report in the log: bottom-up scan for the
+	// byte offset of the last line containing a crash keyword. (Keywords
+	// cannot occur inside the "[ts] [Tn]" prefix, so matching the raw
+	// line is equivalent to matching the stripped line.)
 	last := -1
-	for i := len(lines) - 1; i >= 0; i-- {
-		if hasCrashKeyword(lines[i]) {
-			last = i
+	for end := len(raw); end >= 0; {
+		start := strings.LastIndexByte(raw[:max(end, 0)], '\n') + 1
+		if hasCrashKeyword(raw[start:max(end, 0)]) {
+			last = start
 			break
 		}
+		end = start - 1
 	}
 	if last < 0 {
 		if c.Banner == "" && c.Cmdline == "" {
@@ -102,34 +116,85 @@ func Parse(raw string) *Crash {
 		return c
 	}
 
+	// Walk back to the earliest keyword in the preceding 60-line window
+	// so multi-line reports (e.g. "Unable to handle…" followed by
+	// "Internal error: Oops…") start at the top.
 	first := last
-	for i := last - 1; i >= 0 && i >= last-60; i-- {
-		if hasCrashKeyword(lines[i]) {
-			first = i
+	for i, start := 0, last; i < 60 && start > 0; i++ {
+		prev := strings.LastIndexByte(raw[:start-1], '\n') + 1
+		if hasCrashKeyword(raw[prev : start-1]) {
+			first = prev
 		}
+		start = prev
 	}
 
-	start := first - 2
-	if start < 0 {
-		start = 0
+	// The region spans from 2 lines above the report to 200 lines below
+	// it. Split only the tail from the region start — for a crash at the
+	// end of a large log (the kdump case) this materializes a couple
+	// hundred line headers instead of the whole log's worth.
+	regionStart := first
+	firstIdx := 0
+	for i := 0; i < 2 && regionStart > 0; i++ {
+		regionStart = strings.LastIndexByte(raw[:regionStart-1], '\n') + 1
+		firstIdx++
 	}
-	end := first + 200
+	lines := strings.Split(raw[regionStart:], "\n")
+	end := firstIdx + 200
 	if end > len(lines) {
 		end = len(lines)
 	}
-	region := lines[start:end]
+	region := lines[:end]
+	for i, l := range region {
+		region[i] = StripPrefix(l)
+	}
 
 	c.PanicMessage = buildPanicMessage(region)
 	c.Modules = parseModules(region)
 	c.StackTrace = parseBacktrace(region)
 
+	return c.cloned()
+}
+
+// nextLine returns the line starting at off (newline excluded) and the
+// offset of the following line.
+func nextLine(raw string, off int) (line string, next int) {
+	if i := strings.IndexByte(raw[off:], '\n'); i >= 0 {
+		return raw[off : off+i], off + i + 1
+	}
+	return raw[off:], len(raw)
+}
+
+// cloned copies every retained string out of the raw log's backing
+// array. Parsing works on zero-copy substrings of the (possibly huge)
+// input; without this, the small returned Crash would pin the entire
+// log in memory for as long as the caller holds it.
+func (c *Crash) cloned() *Crash {
+	c.Banner = strings.Clone(c.Banner)
+	c.Cmdline = strings.Clone(c.Cmdline)
+	// strings.Join of a single element returns it uncopied, so even the
+	// joined panic message can alias the input.
+	c.PanicMessage = strings.Clone(c.PanicMessage)
+	for i, f := range c.StackTrace {
+		c.StackTrace[i] = strings.Clone(f)
+	}
+	for i, m := range c.Modules {
+		c.Modules[i] = strings.Clone(m)
+	}
 	return c
 }
 
 // StripPrefix removes the leading kernel-log timestamp/caller-id
 // brackets, e.g. "[ 2855.21] [ T131119] Internal error" → "Internal error".
+//
+// It returns a substring of line rather than a copy: the pattern is
+// ^-anchored, so slicing off the single match is equivalent to
+// ReplaceAllString but allocation-free — this dominates peak memory when
+// parsing multi-megabyte logs, where every line goes through it.
 func StripPrefix(line string) string {
-	return strings.TrimSpace(prefixPattern.ReplaceAllString(line, ""))
+	if loc := prefixPattern.FindStringIndex(line); loc != nil {
+		line = line[loc[1]:]
+	}
+	return strings.TrimSpace(line)
 }
 
 func hasCrashKeyword(s string) bool {
