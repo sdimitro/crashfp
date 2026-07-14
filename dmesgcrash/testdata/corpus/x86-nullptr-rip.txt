@@ -1,0 +1,16 @@
+[    0.000000] [    T0] Linux version 6.5.13-65-coreweave (root@b) (gcc-12 (Ubuntu 12.3.0) 12.3.0, GNU ld 2.38) #1 SMP
+[  100.000000] [ T42] BUG: kernel NULL pointer dereference, address: 0000000000000010
+[  100.000001] [ T42] #PF: supervisor read access in kernel mode
+[  100.000002] [ T42] Oops: 0000 [#1] PREEMPT SMP NOPTI
+[  100.000003] [ T42] CPU: 1 PID: 42 Comm: worker Tainted: G           O       6.5.13-65-coreweave #1
+[  100.000004] [ T42] Hardware name: Supermicro Foo/Bar, BIOS 1.0
+[  100.000005] [ T42] RIP: 0010:fault_func+0x12/0x40
+[  100.000006] [ T42] Code: 00 01 02 03
+[  100.000007] [ T42] RSP: 0018:ffffabc
+[  100.000008] [ T42] Call Trace:
+[  100.000009] [ T42]  <TASK>
+[  100.000010] [ T42]  ? page_fault_oops+0x150/0x420
+[  100.000011] [ T42]  outer_func+0x30/0x90
+[  100.000012] [ T42]  worker_thread+0x100/0x200
+[  100.000013] [ T42]  </TASK>
+[  100.000014] [ T42] Modules linked in: foo bar baz

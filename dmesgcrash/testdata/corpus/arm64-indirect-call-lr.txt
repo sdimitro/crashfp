@@ -1,0 +1,14 @@
+[ 7927.194854] [     C34]  slab maple_node start ffff0000e342e200 pointer offset 69 size 256
+[ 7927.194868] [     C34] Unable to handle kernel NULL pointer dereference at virtual address 0000000000000000
+[ 7927.242961] [     C34] Internal error: Oops: 0000000086000005 [#1] SMP
+[ 7927.382844] [     C34] CPU: 34 UID: 0 PID: 0 Comm: swapper/34 Kdump: loaded Tainted: G           OE      6.14.0-1008-nvidia-64k #8-Ubuntu
+[ 7927.415589] [     C34] pc : 0x0
+[ 7927.417832] [     C34] lr : rcu_do_batch+0x1c4/0x550
+[ 7927.498293] [     C34] Call trace:
+[ 7927.500789] [     C34]  0x0 (P)
+[ 7927.503019] [     C34]  rcu_core+0x150/0x348
+[ 7927.506406] [     C34]  rcu_core_si+0x1c/0x40
+[ 7927.509880] [     C34]  handle_softirqs+0x13c/0x418
+[ 7927.513893] [     C34]  __do_softirq+0x20/0x3c
+[ 7927.548277] [     C34]  cpuidle_enter_state+0xd8/0x720 (P)
+[ 7927.583101] [     C34] SMP: stopping secondary CPUs

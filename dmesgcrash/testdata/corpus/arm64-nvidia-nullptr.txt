@@ -1,0 +1,22 @@
+[    0.000000] [    T0] Linux version 6.14.0-1008-nvidia-64k (buildd@bos03-arm64-088) (aarch64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0, GNU ld (GNU Binutils for Ubuntu) 2.42) #8-Ubuntu SMP PREEMPT_DYNAMIC
+[    0.000000] [    T0] Kernel command line: vmlinuz root=UUID=abc ro panic=10 root=http://example.com/ncore-image-2.27.1-ofed-8096756-n580-kver6.14.0-1
+[ 2855.144540] [ T131119] NVRM: GPU 0018:06:00.0: GPU has fallen off the bus.
+[ 2855.144566] [ T131119] Unable to handle kernel NULL pointer dereference at virtual address 0000000000000360
+[ 2855.211771] [ T131119] Internal error: Oops: 0000000096000005 [#1] SMP
+[ 2855.217470] [ T131119] Modules linked in: nvidia(OE) t241_clink_ioctl(OE) mlx5_core(OE) [last unloaded: mods(OE)]
+[ 2855.350326] [ T131119] CPU: 10 UID: 0 PID: 131119 Comm: nv_open_q Kdump: loaded Tainted: G           OEL     6.14.0-1008-nvidia-64k #8-Ubuntu
+[ 2855.369186] [ T131119] Hardware name: Dell Inc. Dell Server 9712a/Dell 9712a, BIOS 2.26 F01 12/30/2025
+[ 2855.377728] [ T131119] pstate: 63400009 (nZCv daif +PAN -UAO +TCO +DIT -SSBS BTYPE=--)
+[ 2855.384846] [ T131119] pc : kfifoGetChannelIterator_IMPL+0x3c/0x90 [nvidia]
+[ 2855.391295] [ T131119] lr : kfifoGetChannelIterator_IMPL+0x30/0x90 [nvidia]
+[ 2855.397729] [ T131119] sp : ffff8000a27cf7c0
+[ 2855.401113] [ T131119] x29: ffff8000a27cf7c0 x28: ffff8000ad2e0098 x27: 0000000000000002
+[ 2855.474073] [ T131119] Call trace:
+[ 2855.476568] [ T131119]  kfifoGetChannelIterator_IMPL+0x3c/0x90 [nvidia] (P)
+[ 2855.482996] [ T131119]  kgspRcAndNotifyAllChannels_IMPL+0x8c/0x220 [nvidia]
+[ 2855.489403] [ T131119]  osHandleGpuLost+0x138/0x140 [nvidia]
+[ 2855.541816] [ T131119]  nvidia_open_deferred+0x44/0xe8 [nvidia]
+[ 2855.551585] [ T131119]  kthread+0x100/0x120
+[ 2855.554887] [ T131119]  ret_from_fork+0x10/0x20
+[ 2855.558544] [ T131119] Code: 94066b7d 3100069f 54000101 b9000e7f (b94362a0)
+[ 2855.564779] [ T131119] SMP: stopping secondary CPUs

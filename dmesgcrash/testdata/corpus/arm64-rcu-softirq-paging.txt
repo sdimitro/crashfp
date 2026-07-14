@@ -1,0 +1,54 @@
+[ 2511.091014] [      C0] Unable to handle kernel paging request at virtual address 0000000000ffff00
+[ 2511.099126] [      C0] Mem abort info:
+[ 2511.101996] [      C0]   ESR = 0x0000000086000005
+[ 2511.105827] [      C0]   EC = 0x21: IABT (current EL), IL = 32 bits
+[ 2511.111271] [      C0]   SET = 0, FnV = 0
+[ 2511.114405] [      C0]   EA = 0, S1PTW = 0
+[ 2511.117626] [      C0]   FSC = 0x05: level 1 translation fault
+[ 2511.122626] [      C0] user pgtable: 64k pages, 48-bit VAs, pgdp=00001000f3df3c00
+[ 2511.129311] [      C0] [0000000000ffff00] pgd=0000000000000000, p4d=0000000000000000, pud=0000000000000000
+[ 2511.138228] [      C0] Internal error: Oops: 0000000086000005 [#1] SMP
+[ 2511.143927] [      C0] Modules linked in: udp_diag inet_diag xfrm_user xfrm_algo cls_bpf sch_ingress nft_chain_nat nf_nat xt_CT xt_mark veth xt_socket nf_socket_ipv4 nf_socket_ipv6 ip_set xt_conntrack xt_comment nft_compat nf_tables nvidia_peermem(OE) vrf dm_crypt nvidia_uvm(OE) gdrdrv(OE) rdma_ucm(OE) rdma_cm(OE) iw_cm(OE) ib_ipoib(OE) ib_cm(OE) ib_umad(OE) cfg80211 sunrpc(OE) binfmt_misc xfs nvidia_drm(OE) nvidia_modeset(OE) aes_ce_blk aes_ce_cipher polyval_ce polyval_generic ghash_ce sm4_ce_gcm sm4_ce_ccm sm4_ce sm4_ce_cipher nvidia(OE) sm4 sm3_ce video sm3 drm_ttm_helper sha3_ce ttm sha2_ce sha256_arm64 sha1_ce dax_hmem cxl_acpi cxl_port cxl_core nvidia_cspmu ast sbsa_gwdt einj arm_smmuv3_pmu coresight_trbe arm_spe_pmu arm_cspmu_module ipmi_ssif mlx5_fwctl(OE) fwctl(OE) mlx5_dpll(OE) spi_nor acpi_power_meter acpi_ipmi coresight_funnel coresight_stm coresight_tmc stm_p_basic ipmi_devintf cppc_cpufreq stm_core coresight ipmi_msghandler uio_pdrv_genirq uio tcp_bbr sch_fq nf_conntrack nf_defrag_ipv6 nf_defrag_ipv4 br_netfilter
+[ 2511.144013] [      C0]  bridge overlay nvme_fabrics nvme_keyring efi_pstore nfnetlink dmi_sysfs ip_tables x_tables autofs4 8021q garp mrp stp llc raid10 raid456 async_raid6_recov async_memcpy async_pq async_xor async_tx xor xor_neon raid6_pq raid1 raid0 linear mlx5_ib(OE) ib_uverbs(OE) macsec ib_core(OE) mlx5_core(OE) mlxfw(OE) psample i2c_smbus mlxdevm(OE) nvme tls igb nvme_core mlx_compat(OE) arm_smccc_trng nvme_auth xhci_pci_renesas i2c_algo_bit pci_hyperv_intf i2c_tegra
+[ 2511.278113] [      C0] CPU: 0 UID: 0 PID: 0 Comm: swapper/0 Kdump: loaded Tainted: G           OE      6.14.0-1008-nvidia-64k #8-Ubuntu
+[ 2511.289589] [      C0] Tainted: [O]=OOT_MODULE, [E]=UNSIGNED_MODULE
+[ 2511.295018] [      C0] Hardware name: Dell Inc. Dell Server 9712a/Dell 9712a, BIOS 2.26 F01 12/30/2025
+[ 2511.303558] [      C0] pstate: 83400809 (Nzcv daif +PAN -UAO +TCO +DIT -SSBS BTYPE=-c)
+[ 2511.310676] [      C0] pc : 0xffff00
+[ 2511.313366] [      C0] lr : rcu_do_batch+0x1c4/0x550
+[ 2511.317464] [      C0] sp : ffff80008000fe60
+[ 2511.320848] [      C0] x29: ffff80008000fe80 x28: 0000000000ffff00 x27: ffffa19c24e6e68c
+[ 2511.328143] [      C0] x26: 000000000000000a x25: ffff00779dda99f8 x24: 0000000000000000
+[ 2511.335439] [      C0] x23: 000000000000003d x22: ffff00779dda9980 x21: ffffa19c28474800
+[ 2511.342736] [      C0] x20: 000000000000003e x19: ffff0000f8864525 x18: ffff800081200030
+[ 2511.350031] [      C0] x17: 0000000000000000 x16: 0000000000000000 x15: 0000000000000000
+[ 2511.357326] [      C0] x14: 0000000000000000 x13: 0000000000000000 x12: 0000000000000000
+[ 2511.364621] [      C0] x11: 0000000000000000 x10: fb95516da0a5c826 x9 : ffffa19c24e6e528
+[ 2511.371917] [      C0] x8 : 0000000000000000 x7 : 0000000000000000 x6 : 0000000000000000
+[ 2511.379212] [      C0] x5 : 0000000000000000 x4 : 0000000000000000 x3 : 0000000000000000
+[ 2511.386507] [      C0] x2 : 0000000000000000 x1 : 0000000000000000 x0 : ffff0000f8864525
+[ 2511.393803] [      C0] Call trace:
+[ 2511.396299] [      C0]  0xffff00 (P)
+[ 2511.398973] [      C0]  rcu_core+0x150/0x348
+[ 2511.402360] [      C0]  rcu_core_si+0x1c/0x40
+[ 2511.405834] [      C0]  handle_softirqs+0x13c/0x418
+[ 2511.409854] [      C0]  __do_softirq+0x20/0x3c
+[ 2511.413419] [      C0]  ____do_softirq+0x1c/0x40
+[ 2511.417164] [      C0]  call_on_irq_stack+0x3c/0x50
+[ 2511.421170] [      C0]  do_softirq_own_stack+0x28/0x50
+[ 2511.425444] [      C0]  __irq_exit_rcu+0x184/0x1c8
+[ 2511.429361] [      C0]  irq_exit_rcu+0x1c/0x40
+[ 2511.432923] [      C0]  el1_interrupt+0x4c/0xf0
+[ 2511.436577] [      C0]  el1h_64_irq_handler+0x1c/0x40
+[ 2511.440761] [      C0]  el1h_64_irq+0x84/0x88
+[ 2511.444233] [      C0]  cpuidle_enter_state+0xd8/0x720 (P)
+[ 2511.448862] [      C0]  cpuidle_enter+0x44/0x78
+[ 2511.452515] [      C0]  cpuidle_idle_call+0x15c/0x238
+[ 2511.456699] [      C0]  do_idle+0x100/0x110
+[ 2511.459994] [      C0]  cpu_startup_entry+0x44/0x50
+[ 2511.464001] [      C0]  rest_init+0x104/0x128
+[ 2511.467474] [      C0]  start_kernel+0x3c0/0x4c8
+[ 2511.471215] [      C0]  __primary_switched+0x90/0xa0
+[ 2511.475315] [      C0] Code: ???????? ???????? ???????? ???????? (????????) 
+[ 2511.481548] [      C0] SMP: stopping secondary CPUs
+[ 2511.492613] [      C0] Starting crashdump kernel...
