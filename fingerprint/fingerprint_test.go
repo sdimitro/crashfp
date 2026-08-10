@@ -417,3 +417,41 @@ func TestComputeFromKernelBacktrace_Arm64InfraFiltering(t *testing.T) {
 		t.Errorf("top3: got %v, want %v", fp.Inputs.Top3Funcs, wantTop)
 	}
 }
+
+// Stack-printer frames (dump_stack_lvl and friends) are pure plumbing that
+// tops almost every oops/GP report; if they aren't filtered they become the
+// "fault function" and unrelated crashes collapse onto one fingerprint.
+func TestComputeFromKernelBacktrace_FiltersStackPrinters(t *testing.T) {
+	frames := []string{
+		"dump_stack_lvl+0x5c/0x80",
+		"dump_stack+0x14/0x1c",
+		"show_stack+0x18/0x28",
+		"my_gp_faulting_func+0x42/0x100",
+		"my_caller+0x10/0x50",
+	}
+	fp := ComputeFromKernelBacktrace(frames, "general protection fault, probably for non-canonical address")
+	if fp == nil {
+		t.Fatal("expected non-nil fingerprint")
+	}
+	if fp.Inputs.FaultFunc != "my_gp_faulting_func" {
+		t.Errorf("fault func: got %q, want %q", fp.Inputs.FaultFunc, "my_gp_faulting_func")
+	}
+	for _, f := range fp.Inputs.AllFuncs {
+		if f == "dump_stack_lvl" || f == "dump_stack" || f == "show_stack" {
+			t.Errorf("stack-printer %q should have been filtered; AllFuncs=%v", f, fp.Inputs.AllFuncs)
+		}
+	}
+}
+
+// Two unrelated crashes that both start with the stack-printer chain must not
+// collide on one fingerprint once the printers are filtered.
+func TestComputeFromKernelBacktrace_PrintersDontCauseCollision(t *testing.T) {
+	a := ComputeFromKernelBacktrace([]string{"dump_stack_lvl+0x5c/0x80", "funcA+0x10/0x20"}, "general protection fault")
+	b := ComputeFromKernelBacktrace([]string{"dump_stack_lvl+0x5c/0x80", "funcB+0x10/0x20"}, "general protection fault")
+	if a == nil || b == nil {
+		t.Fatal("expected non-nil fingerprints")
+	}
+	if a.RIP == b.RIP {
+		t.Errorf("unrelated crashes collided on rip %s (fault funcs %q vs %q)", a.RIP, a.Inputs.FaultFunc, b.Inputs.FaultFunc)
+	}
+}
