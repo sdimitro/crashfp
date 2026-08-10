@@ -49,6 +49,14 @@ type Frame struct {
 // both x86 and arm64 entry paths. These are plumbing frames that appear in
 // every crash of the same type regardless of root cause.
 var InfraFunctions = map[string]bool{
+	"dump_stack_lvl":                true,
+	"dump_stack":                    true,
+	"__dump_stack":                  true,
+	"show_stack":                    true,
+	"show_trace_log_lvl":            true,
+	"show_stack_log_lvl":            true,
+	"dump_backtrace":                true,
+	"dump_backtrace_entry":          true,
 	"show_regs":                     true,
 	"__die":                         true,
 	"die":                           true,
