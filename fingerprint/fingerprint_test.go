@@ -443,6 +443,25 @@ func TestComputeFromKernelBacktrace_FiltersStackPrinters(t *testing.T) {
 	}
 }
 
+func TestComputeFromKernelBacktrace_FiltersPanicWrappers(t *testing.T) {
+	wrappers := []string{
+		"show_stack+0x24/0x58 (C)",
+		"dump_stack_lvl+0x88/0xc8",
+		"dump_stack+0x1c/0x40",
+		"vpanic+0x2e0/0x548",
+		"panic+0x6c/0x78",
+	}
+	if fp := ComputeFromKernelBacktrace(wrappers, "Kernel panic"); fp != nil {
+		t.Fatalf("wrapper-only trace produced fingerprint: %+v", fp.Inputs)
+	}
+
+	frames := append(append([]string(nil), wrappers...), "driver_fault+0x10/0x20")
+	fp := ComputeFromKernelBacktrace(frames, "Kernel panic")
+	if fp == nil || fp.Inputs.FaultFunc != "driver_fault" || fp.Inputs.Filtered != len(wrappers) {
+		t.Fatalf("panic wrappers were not filtered: %+v", fp)
+	}
+}
+
 // Two unrelated crashes that both start with the stack-printer chain must not
 // collide on one fingerprint once the printers are filtered.
 func TestComputeFromKernelBacktrace_PrintersDontCauseCollision(t *testing.T) {

@@ -25,8 +25,8 @@
 // frames (drgn path only) are dropped, and functions in [InfraFunctions]
 // — kernel exception-dispatch, syscall-entry, and scheduling plumbing
 // that appears in every crash of a given type — are filtered out so
-// fingerprints track root cause rather than entry path. If filtering
-// would remove every frame, all non-inlined frames are used instead.
+// fingerprints track root cause rather than entry path. A trace containing
+// only infrastructure frames produces no fingerprint.
 //
 // # Ingestion paths
 //

@@ -94,6 +94,7 @@ var InfraFunctions = map[string]bool{
 	"__warn":                        true,
 	"warn_slowpath_fmt":             true,
 	"panic":                         true,
+	"vpanic":                        true,
 	"nmi_panic":                     true,
 	"watchdog_overflow_callback":    true,
 	"__lockup_detector_reconfigure": true,
@@ -253,10 +254,9 @@ type rawFrame struct {
 
 // fingerprintFromFrames is the shared core behind both Compute (drgn) and
 // ComputeFromKernelBacktrace (kernel log). It drops inlined and
-// infrastructure frames — falling back to all non-inlined frames if that
-// would remove everything — then hands the surviving, fault-first function
+// infrastructure frames, then hands the surviving, fault-first function
 // list to buildFingerprint. Callers differ only in how they parse raw
-// lines into frames, so filtering, fallback, and hashing stay identical
+// lines into frames, so filtering and hashing stay identical
 // across sources.
 func fingerprintFromFrames(frames []rawFrame, panicMessage string) *Fingerprint {
 	var significant []string
@@ -270,16 +270,6 @@ func fingerprintFromFrames(frames []rawFrame, panicMessage string) *Fingerprint 
 			continue
 		}
 		significant = append(significant, f.name)
-	}
-
-	// If everything was filtered, fall back to all non-inlined frames.
-	if len(significant) == 0 {
-		for _, f := range frames {
-			if !f.inlined {
-				significant = append(significant, f.name)
-			}
-		}
-		filtered = 0
 	}
 
 	return buildFingerprint(significant, filtered, panicMessage)
