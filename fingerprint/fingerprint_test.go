@@ -448,6 +448,7 @@ func TestComputeFromKernelBacktrace_FiltersPanicWrappers(t *testing.T) {
 		"show_stack+0x24/0x58 (C)",
 		"dump_stack_lvl+0x88/0xc8",
 		"dump_stack+0x1c/0x40",
+		"__crash_kexec+0x120/0x1c4",
 		"vpanic+0x2e0/0x548",
 		"panic+0x6c/0x78",
 	}
@@ -459,6 +460,48 @@ func TestComputeFromKernelBacktrace_FiltersPanicWrappers(t *testing.T) {
 	fp := ComputeFromKernelBacktrace(frames, "Kernel panic")
 	if fp == nil || fp.Inputs.FaultFunc != "driver_fault" || fp.Inputs.Filtered != len(wrappers) {
 		t.Fatalf("panic wrappers were not filtered: %+v", fp)
+	}
+}
+
+func TestCompute_CrashKexecDoesNotMergeCauses(t *testing.T) {
+	causes := []struct {
+		name   string
+		source string
+	}{
+		{"sysrq_handle_crash", "drivers/tty/sysrq.c"},
+		{"mce_panic", "arch/x86/kernel/cpu/mce/core.c"},
+		{"__ghes_panic", "drivers/acpi/apei/ghes.c"},
+	}
+	seen := make(map[string]bool)
+	for _, cause := range causes {
+		t.Run(cause.name, func(t *testing.T) {
+			trace := []string{
+				"#0 at 0x1 (__crash_kexec+0x1/0x2) in crash_setup_regs at arch/x86/include/asm/kexec.h:117:15 (inlined)",
+				"#1 at 0x1 (__crash_kexec+0x1/0x2) in __crash_kexec at kernel/crash_core.c:143:4",
+				"#2 at 0x2 (panic+0x1/0x2) in panic at kernel/panic.c:787:2",
+				"#3 at 0x3 (" + cause.name + "+0x1/0x2) in " + cause.name + " at " + cause.source + ":154:2",
+			}
+			panicMessage := "Kernel panic - not syncing: fatal error"
+			fp := Compute(trace, panicMessage)
+			fallback := ComputeFromKernelBacktrace([]string{
+				"__crash_kexec+0x1/0x2",
+				"panic+0x1/0x2",
+				cause.name + "+0x1/0x2",
+			}, panicMessage)
+			if fp == nil || fallback == nil {
+				t.Fatal("expected fingerprints from drgn and kernel backtrace")
+			}
+			if fp.Inputs.FaultFunc != cause.name || fallback.Inputs.FaultFunc != cause.name {
+				t.Fatalf("fault functions: drgn %q, kernel %q; want %q", fp.Inputs.FaultFunc, fallback.Inputs.FaultFunc, cause.name)
+			}
+			if fp.TypeRIP != fallback.TypeRIP {
+				t.Fatal("drgn and kernel backtrace fingerprints differ")
+			}
+			if seen[fp.TypeRIP] {
+				t.Fatalf("distinct crash causes share fingerprint %s", fp.TypeRIP)
+			}
+			seen[fp.TypeRIP] = true
+		})
 	}
 }
 
