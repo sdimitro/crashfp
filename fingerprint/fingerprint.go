@@ -95,6 +95,7 @@ var InfraFunctions = map[string]bool{
 	"warn_slowpath_fmt":             true,
 	"panic":                         true,
 	"vpanic":                        true,
+	"__crash_kexec":                 true,
 	"nmi_panic":                     true,
 	"watchdog_overflow_callback":    true,
 	"__lockup_detector_reconfigure": true,
